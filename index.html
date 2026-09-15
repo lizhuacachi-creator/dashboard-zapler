@@ -436,7 +436,7 @@
         </div>
 
         <div class="panel" style="margin-bottom:16px;">
-          <h2>Evolución mensual del capital inmovilizado <span class="note">Valorizado USD</span></h2>
+          <h2>Evolución general del inventario <span class="note">Valorizado USD</span></h2>
           <div class="body">
             <div class="evol-row" id="evol-row"></div>
             <div class="evol-note">Por ahora solo hay datos de Agosto 2026. Este gráfico se completa automáticamente a medida que se suban los meses de Enero–Julio 2026.</div>
@@ -566,10 +566,13 @@
                 <th data-sort="marca">Marca<span class="arw">↕</span></th>
                 <th data-sort="almacen">Almacén<span class="arw">↕</span></th>
                 <th data-sort="antiguedadCongelada" style="text-align:right;">Antigüedad<span class="arw">↕</span></th>
+                <th data-sort="stockCongelado" style="text-align:right;">Stock<span class="arw">↕</span></th>
                 <th data-sort="costoUnitario" style="text-align:right;">Costo Unit.<span class="arw">↕</span></th>
                 <th data-sort="valorizadoCongelado" style="text-align:right;">Costo Total<span class="arw">↕</span></th>
                 <th data-sort="precioVentaUnitario" style="text-align:right;">Precio Venta<span class="arw">↕</span></th>
+                <th data-sort="cantidadVendida" style="text-align:right;">Vendido (und.)<span class="arw">↕</span></th>
                 <th data-sort="valorizadoVendido" style="text-align:right;">Val. vendido<span class="arw">↕</span></th>
+                <th data-sort="stockRestante" style="text-align:right;">Restante (und.)<span class="arw">↕</span></th>
                 <th data-sort="pctAvance" style="text-align:right;">% avance<span class="arw">↕</span></th>
                 <th data-sort="estado">Estado<span class="arw">↕</span></th>
                 <th>Vendedor(es)</th>
@@ -636,10 +639,13 @@
                 <th data-sort="marca">Marca<span class="arw">↕</span></th>
                 <th data-sort="almacen">Almacén<span class="arw">↕</span></th>
                 <th data-sort="antiguedadCongelada" style="text-align:right;">Antigüedad<span class="arw">↕</span></th>
+                <th data-sort="stockCongelado" style="text-align:right;">Stock<span class="arw">↕</span></th>
                 <th data-sort="costoUnitario" style="text-align:right;">Costo Unit.<span class="arw">↕</span></th>
                 <th data-sort="precioVentaFinal" style="text-align:right;">Precio Venta Final<span class="arw">↕</span></th>
                 <th data-sort="valorizadoPrecioCampana" style="text-align:right;">Val. a precio campaña<span class="arw">↕</span></th>
+                <th data-sort="cantidadVendida" style="text-align:right;">Vendido (und.)<span class="arw">↕</span></th>
                 <th data-sort="valorizadoVendido" style="text-align:right;">Val. vendido<span class="arw">↕</span></th>
+                <th data-sort="stockRestante" style="text-align:right;">Restante (und.)<span class="arw">↕</span></th>
                 <th data-sort="pctAvance" style="text-align:right;">% avance<span class="arw">↕</span></th>
                 <th data-sort="estado">Estado<span class="arw">↕</span></th>
                 <th>Vendedor(es)</th>
@@ -1517,10 +1523,13 @@
         <td>${r.marca}</td>
         <td style="max-width:260px;"><span class="tcell-trunc" title="${String(r.almacen).replace(/"/g,'&quot;')}">${r.almacen}</span></td>
         <td class="num" style="text-align:right;">${(r.antiguedadCongelada||0).toFixed(1)}a</td>
+        <td class="num" style="text-align:right;">${fmtN(r.stockCongelado)}</td>
         <td class="num" style="text-align:right;">${fmtUSD2(r.costoUnitario)}</td>
         <td class="num" style="text-align:right;">${fmtUSD(r.valorizadoCongelado)}</td>
         <td class="num" style="text-align:right;">${r.precioVentaUnitario!=null ? fmtUSD2(r.precioVentaUnitario) : '—'}</td>
+        <td class="num" style="text-align:right;">${fmtN(r.cantidadVendida)}</td>
         <td class="num" style="text-align:right;">${fmtUSD(r.valorizadoVendido)}</td>
+        <td class="num" style="text-align:right;">${fmtN(r.stockRestante)}</td>
         <td class="num" style="text-align:right; font-weight:700;">${r.pctAvance}%</td>
         <td>${estadoBadge(r.estado)}</td>
         <td style="font-size:11px; color:var(--text-2);">${r.vendedores || '—'}</td>
@@ -1694,10 +1703,13 @@
         <td>${r.marca}</td>
         <td>${r.almacen}</td>
         <td class="num" style="text-align:right;">${(r.antiguedadCongelada||0).toFixed(0)}a</td>
+        <td class="num" style="text-align:right;">${fmtN(r.stockCongelado)}</td>
         <td class="num" style="text-align:right;">${fmtUSD2(r.costoUnitario)}</td>
         <td class="num" style="text-align:right;">${fmtUSD2(r.precioVentaFinal)}</td>
         <td class="num" style="text-align:right;">${fmtUSD(r.valorizadoPrecioCampana)}</td>
+        <td class="num" style="text-align:right;">${fmtN(r.cantidadVendida)}</td>
         <td class="num" style="text-align:right;">${fmtUSD(r.valorizadoVendido)}</td>
+        <td class="num" style="text-align:right;">${fmtN(r.stockRestante)}</td>
         <td class="num" style="text-align:right; font-weight:700;">${r.pctAvance}%</td>
         <td>${estadoBadge(r.estado)}</td>
         <td style="font-size:11px; color:var(--text-2);">${r.vendedores || '—'}</td>
