@@ -282,6 +282,21 @@
   .evol-detail .val{font-weight:800; font-size:14px; color:var(--text-1);}
   .evol-note{font-size:11px; color:var(--text-3); padding:8px 2px 0;}
 
+  /* ---------- evolucion: comparativo por clasificacion ---------- */
+  .evol-compare{margin-top:14px; padding-top:12px; border-top:1px solid var(--grid);}
+  .evol-compare-title{font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:var(--text-2); margin-bottom:8px;}
+  .evol-compare-table{width:100%; border-collapse:collapse; font-size:12px;}
+  .evol-compare-table th{text-align:right; font-size:10px; text-transform:uppercase; letter-spacing:.03em; color:var(--text-3); font-weight:700; padding:5px 8px; border-bottom:1px solid var(--grid);}
+  .evol-compare-table th:first-child{text-align:left;}
+  .evol-compare-table td{padding:6px 8px; text-align:right; border-bottom:1px solid var(--grid); color:var(--text-1);}
+  .evol-compare-table td.lbl{text-align:left; font-weight:600;}
+  .evol-compare-table td.num{font-weight:700; font-variant-numeric:tabular-nums;}
+  .evol-compare-table td.diff.good{color:var(--green);}
+  .evol-compare-table td.diff.bad{color:var(--red);}
+  .evol-compare-table tr.total td{border-top:2px solid var(--border); border-bottom:none; font-weight:800;}
+  .evol-compare-legend{font-size:10.5px; color:var(--text-3); margin-top:6px;}
+  .evol-compare-note{font-size:11px; color:var(--text-3); padding:8px 0;}
+
   /* ---------- matrix ---------- */
   table.matrix{width:100%; border-collapse:collapse; font-size:11.5px;}
   table.matrix th, table.matrix td{padding:7px 6px; text-align:center; border:1px solid var(--grid);}
@@ -407,6 +422,16 @@
         <div class="total-bar" id="total-bar"></div>
         <div class="kpis" id="kpi-row"></div>
 
+        <div class="panel" style="margin-bottom:16px;">
+          <h2>Evolución general del inventario <span class="note">Valorizado USD</span></h2>
+          <div class="body">
+            <div class="evol-row" id="evol-row"></div>
+            <div class="evol-detail" id="evol-detail"></div>
+            <div class="evol-note" id="evol-note"></div>
+            <div class="evol-compare" id="evol-compare"></div>
+          </div>
+        </div>
+
         <div class="grid2">
           <div class="panel">
             <h2>Distribución por Clasificación <span class="note">Valorizado USD</span></h2>
@@ -447,15 +472,6 @@
               </div>
               <div class="helptext">Tip: para ver qué Marca concentra más inventario "para atacar", filtra Clasificación = D y AD, y Antigüedad mínima = 2 años en el panel de filtros — el panel de Distribución por Marca de la izquierda se reordena solo con ese filtro aplicado.</div>
             </div>
-          </div>
-        </div>
-
-        <div class="panel" style="margin-bottom:16px;">
-          <h2>Evolución general del inventario <span class="note">Valorizado USD</span></h2>
-          <div class="body">
-            <div class="evol-row" id="evol-row"></div>
-            <div class="evol-detail" id="evol-detail"></div>
-            <div class="evol-note" id="evol-note"></div>
           </div>
         </div>
       </div>
@@ -1256,6 +1272,91 @@
     return {totalUSD, skus: saps.size, numpartes: partes.size, lineas, filtrado:true};
   }
 
+  // Suma el valorizado de un mes por Clasificacion (A/B/C/D/AD/AN), respetando los mismos
+  // filtros que evolMesStats -- EXCEPTO el filtro de Clasificacion en si (spec.clase se
+  // ignora aqui a proposito, porque el objetivo de esta tabla es justamente desglosar por
+  // clase; si Eli tiene, por ej., solo "D" tildado en el panel de filtros, esta tabla igual
+  // muestra las 6 clases). Devuelve {totales:{A,B,C,D,AD,AN}, disponible:bool} -- disponible
+  // es false para meses viejos que no tengan filas "slim" guardadas (antes del 24-set-2026).
+  function evolClaseStats(mes, spec){
+    const totales = {}; CLASS_ORDER.forEach(c=>totales[c]=0);
+    if (!Array.isArray(mes.rows)) return {totales, disponible:false};
+    for (const r of mes.rows){
+      if (spec){
+        if (spec.alm && !spec.alm.has(normTxt(r[EVOL_ROW_COLS.alm]))) continue;
+        if (spec.gestor && !spec.gestor.has(normTxt(r[EVOL_ROW_COLS.gestor]))) continue;
+        if (spec.articulo && !spec.articulo.has(normTxt(r[EVOL_ROW_COLS.articulo]))) continue;
+        if (spec.portafolio && !spec.portafolio.has(normTxt(r[EVOL_ROW_COLS.portafolio]))) continue;
+        if (spec.marca && !spec.marca.has(normTxt(r[EVOL_ROW_COLS.marca]))) continue;
+        if (spec.antMin > 0){ const a = r[EVOL_ROW_COLS.antA]; if (a==null || a < spec.antMin) continue; }
+      }
+      const clase = r[EVOL_ROW_COLS.clase];
+      if (totales[clase] == null) continue; // clase desconocida/vacia, se ignora
+      totales[clase] += r[EVOL_ROW_COLS.valUSD] || 0;
+    }
+    return {totales, disponible:true};
+  }
+
+  // Pinta, debajo del grafico de Evolucion, una tabla fija comparando los DOS meses mas
+  // recientes que tengan detalle linea-a-linea (hoy Agosto vs Setiembre; el mes siguiente
+  // que se agregue corre la comparacion automaticamente a Setiembre vs Octubre, etc.) por
+  // Clasificacion agrupada: Capital Sano (A+B), C, D, AD, AN -- para que Eli vea de un
+  // vistazo si el inventario "sano" subio y el critico (D/AD) bajo, no solo el total $.
+  function renderEvolCompare(keys, spec){
+    const el = document.getElementById('evol-compare');
+    if (!el) return;
+    const conDetalle = keys.filter(k => Array.isArray(EVOLUCION[k].rows));
+    if (conDetalle.length < 2){
+      el.innerHTML = '<div class="evol-compare-note">Se necesitan al menos 2 meses con detalle línea a línea para comparar por clasificación (disponible desde el corte de setiembre 2026 en adelante).</div>';
+      return;
+    }
+    const prevKey = conDetalle[conDetalle.length-2], currKey = conDetalle[conDetalle.length-1];
+    const prev = evolClaseStats(EVOLUCION[prevKey], spec).totales;
+    const curr = evolClaseStats(EVOLUCION[currKey], spec).totales;
+    const prevLbl = EVOLUCION[prevKey].label, currLbl = EVOLUCION[currKey].label;
+
+    const GRUPOS = [
+      {label:'Capital Sano (A+B)', clases:['A','B'], goodDir:'up'},
+      {label:'C · Rotación baja', clases:['C'], goodDir:'down'},
+      {label:'D · Sin rotación', clases:['D'], goodDir:'down'},
+      {label:'AD · Crítico', clases:['AD'], goodDir:'down'},
+      {label:'AN · Nuevo / sin historial', clases:['AN'], goodDir:null},
+    ];
+    const sum = (totales, clases) => clases.reduce((s,c)=>s+(totales[c]||0),0);
+    const pct = (pv,cv) => pv !== 0 ? ((cv-pv)/pv*100) : (cv !== 0 ? 100 : 0);
+
+    const filas = GRUPOS.map(g=>{
+      const pv = sum(prev, g.clases), cv = sum(curr, g.clases), diff = cv-pv, p = pct(pv,cv);
+      let cls = 'neutral';
+      if (g.goodDir === 'up') cls = diff > 0 ? 'good' : (diff < 0 ? 'bad' : 'neutral');
+      if (g.goodDir === 'down') cls = diff < 0 ? 'good' : (diff > 0 ? 'bad' : 'neutral');
+      const signo = diff > 0 ? '+' : '';
+      return `<tr>
+        <td class="lbl">${g.label}</td>
+        <td class="num">${fmtUSD(pv)}</td>
+        <td class="num">${fmtUSD(cv)}</td>
+        <td class="num diff ${cls}">${signo}${fmtUSD(diff)}</td>
+        <td class="num diff ${cls}">${signo}${p.toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+
+    const totalPrev = CLASS_ORDER.reduce((s,c)=>s+(prev[c]||0),0);
+    const totalCurr = CLASS_ORDER.reduce((s,c)=>s+(curr[c]||0),0);
+    const diffTotal = totalCurr - totalPrev, pctTotal = pct(totalPrev, totalCurr);
+    const signoTotal = diffTotal > 0 ? '+' : '';
+
+    el.innerHTML = `
+      <div class="evol-compare-title">Comparativo por Clasificación — ${prevLbl} vs ${currLbl}${spec ? ' (bajo los filtros activos, excepto Clasificación)' : ''}</div>
+      <table class="evol-compare-table">
+        <thead><tr><th>Clasificación</th><th>${prevLbl}</th><th>${currLbl}</th><th>Variación $</th><th>Variación %</th></tr></thead>
+        <tbody>
+          ${filas}
+          <tr class="total"><td class="lbl">Total</td><td class="num">${fmtUSD(totalPrev)}</td><td class="num">${fmtUSD(totalCurr)}</td><td class="num">${signoTotal}${fmtUSD(diffTotal)}</td><td class="num">${signoTotal}${pctTotal.toFixed(1)}%</td></tr>
+        </tbody>
+      </table>
+      <div class="evol-compare-legend">Verde = mejora (sube el Capital Sano A+B, o baja C/D/AD). Rojo = empeora. AN queda sin color porque es inventario nuevo — ni bueno ni malo por sí solo.</div>`;
+  }
+
   function renderEvolucion(){
     const keys = Object.keys(EVOLUCION).sort(); // "YYYY-MM" ordena cronologico como string
     if (keys.length === 0){
@@ -1265,6 +1366,7 @@
         `<div class="evol-bar future"><div class="col"></div><div class="mlbl">${m}</div></div>`).join('');
       document.getElementById('evol-detail').style.display = 'none';
       document.getElementById('evol-note').textContent = 'Todavía no hay historico mensual. Este gráfico se completa automáticamente cada vez que se corre una actualización mensual.';
+      const cmp = document.getElementById('evol-compare'); if (cmp) cmp.innerHTML = '';
       return;
     }
     if (!evolSelectedKey || !EVOLUCION[evolSelectedKey]) evolSelectedKey = keys[keys.length-1]; // mes mas reciente por defecto
@@ -1298,6 +1400,8 @@
     document.getElementById('evol-note').textContent = spec
       ? 'Comparativa filtrada según los filtros activos arriba. Haz clic en una barra para ver el detalle de ese mes.'
       : 'Haz clic en una barra para ver el detalle de ese mes. Este gráfico se completa automáticamente cada vez que se corre una actualización mensual.';
+
+    renderEvolCompare(keys, spec);
   }
 
   function renderMatrix(){
