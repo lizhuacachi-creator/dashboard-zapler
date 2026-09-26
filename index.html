@@ -422,16 +422,6 @@
         <div class="total-bar" id="total-bar"></div>
         <div class="kpis" id="kpi-row"></div>
 
-        <div class="panel" style="margin-bottom:16px;">
-          <h2>Evolución general del inventario <span class="note">Valorizado USD</span></h2>
-          <div class="body">
-            <div class="evol-row" id="evol-row"></div>
-            <div class="evol-detail" id="evol-detail"></div>
-            <div class="evol-note" id="evol-note"></div>
-            <div class="evol-compare" id="evol-compare"></div>
-          </div>
-        </div>
-
         <div class="grid2">
           <div class="panel">
             <h2>Distribución por Clasificación <span class="note">Valorizado USD</span></h2>
@@ -472,6 +462,16 @@
               </div>
               <div class="helptext">Tip: para ver qué Marca concentra más inventario "para atacar", filtra Clasificación = D y AD, y Antigüedad mínima = 2 años en el panel de filtros — el panel de Distribución por Marca de la izquierda se reordena solo con ese filtro aplicado.</div>
             </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px;">
+          <h2>Evolución general del inventario <span class="note">Valorizado USD</span></h2>
+          <div class="body">
+            <div class="evol-row" id="evol-row"></div>
+            <div class="evol-detail" id="evol-detail"></div>
+            <div class="evol-note" id="evol-note"></div>
+            <div class="evol-compare" id="evol-compare"></div>
           </div>
         </div>
       </div>
@@ -1297,64 +1297,51 @@
     return {totales, disponible:true};
   }
 
-  // Pinta, debajo del grafico de Evolucion, una tabla fija comparando los DOS meses mas
-  // recientes que tengan detalle linea-a-linea (hoy Agosto vs Setiembre; el mes siguiente
-  // que se agregue corre la comparacion automaticamente a Setiembre vs Octubre, etc.) por
-  // Clasificacion agrupada: Capital Sano (A+B), C, D, AD, AN -- para que Eli vea de un
-  // vistazo si el inventario "sano" subio y el critico (D/AD) bajo, no solo el total $.
-  function renderEvolCompare(keys, spec){
+  // Pinta, debajo del grafico de Evolucion, el desglose por Clasificacion agrupada
+  // (Capital Sano A+B, C, D, AD, AN) del mes actualmente SELECCIONADO (el que Eli
+  // clickeo en las barras de arriba) -- no una comparacion fija de dos meses. Asi, al
+  // hacer clic en Agosto aparecen los datos de Agosto, y al hacer clic en Setiembre
+  // cambian a los de Setiembre; Eli compara alternando el clic entre barras.
+  function renderEvolClaseMes(key, spec){
     const el = document.getElementById('evol-compare');
     if (!el) return;
-    const conDetalle = keys.filter(k => Array.isArray(EVOLUCION[k].rows));
-    if (conDetalle.length < 2){
-      el.innerHTML = '<div class="evol-compare-note">Se necesitan al menos 2 meses con detalle línea a línea para comparar por clasificación (disponible desde el corte de setiembre 2026 en adelante).</div>';
+    const mes = EVOLUCION[key];
+    if (!mes){ el.innerHTML = ''; return; }
+    const {totales, disponible} = evolClaseStats(mes, spec);
+    if (!disponible){
+      el.innerHTML = '<div class="evol-compare-note">El desglose por Clasificación no está disponible para este corte (solo se guarda detalle línea a línea desde el corte de setiembre 2026 en adelante).</div>';
       return;
     }
-    const prevKey = conDetalle[conDetalle.length-2], currKey = conDetalle[conDetalle.length-1];
-    const prev = evolClaseStats(EVOLUCION[prevKey], spec).totales;
-    const curr = evolClaseStats(EVOLUCION[currKey], spec).totales;
-    const prevLbl = EVOLUCION[prevKey].label, currLbl = EVOLUCION[currKey].label;
 
     const GRUPOS = [
-      {label:'Capital Sano (A+B)', clases:['A','B'], goodDir:'up'},
-      {label:'C · Rotación baja', clases:['C'], goodDir:'down'},
-      {label:'D · Sin rotación', clases:['D'], goodDir:'down'},
-      {label:'AD · Crítico', clases:['AD'], goodDir:'down'},
-      {label:'AN · Nuevo / sin historial', clases:['AN'], goodDir:null},
+      {label:'Capital Sano (A+B)', clases:['A','B']},
+      {label:'C · Rotación baja', clases:['C']},
+      {label:'D · Sin rotación', clases:['D']},
+      {label:'AD · Crítico', clases:['AD']},
+      {label:'AN · Nuevo / sin historial', clases:['AN']},
     ];
-    const sum = (totales, clases) => clases.reduce((s,c)=>s+(totales[c]||0),0);
-    const pct = (pv,cv) => pv !== 0 ? ((cv-pv)/pv*100) : (cv !== 0 ? 100 : 0);
+    const sum = (clases) => clases.reduce((s,c)=>s+(totales[c]||0),0);
+    const totalMes = CLASS_ORDER.reduce((s,c)=>s+(totales[c]||0),0);
 
     const filas = GRUPOS.map(g=>{
-      const pv = sum(prev, g.clases), cv = sum(curr, g.clases), diff = cv-pv, p = pct(pv,cv);
-      let cls = 'neutral';
-      if (g.goodDir === 'up') cls = diff > 0 ? 'good' : (diff < 0 ? 'bad' : 'neutral');
-      if (g.goodDir === 'down') cls = diff < 0 ? 'good' : (diff > 0 ? 'bad' : 'neutral');
-      const signo = diff > 0 ? '+' : '';
+      const v = sum(g.clases), p = totalMes ? (v/totalMes*100) : 0;
       return `<tr>
         <td class="lbl">${g.label}</td>
-        <td class="num">${fmtUSD(pv)}</td>
-        <td class="num">${fmtUSD(cv)}</td>
-        <td class="num diff ${cls}">${signo}${fmtUSD(diff)}</td>
-        <td class="num diff ${cls}">${signo}${p.toFixed(1)}%</td>
+        <td class="num">${fmtUSD(v)}</td>
+        <td class="num">${p.toFixed(1)}%</td>
       </tr>`;
     }).join('');
 
-    const totalPrev = CLASS_ORDER.reduce((s,c)=>s+(prev[c]||0),0);
-    const totalCurr = CLASS_ORDER.reduce((s,c)=>s+(curr[c]||0),0);
-    const diffTotal = totalCurr - totalPrev, pctTotal = pct(totalPrev, totalCurr);
-    const signoTotal = diffTotal > 0 ? '+' : '';
-
     el.innerHTML = `
-      <div class="evol-compare-title">Comparativo por Clasificación — ${prevLbl} vs ${currLbl}${spec ? ' (bajo los filtros activos, excepto Clasificación)' : ''}</div>
+      <div class="evol-compare-title">Desglose por Clasificación — ${mes.label}${spec ? ' (bajo los filtros activos, excepto Clasificación)' : ''}</div>
       <table class="evol-compare-table">
-        <thead><tr><th>Clasificación</th><th>${prevLbl}</th><th>${currLbl}</th><th>Variación $</th><th>Variación %</th></tr></thead>
+        <thead><tr><th>Clasificación</th><th>Valorizado</th><th>% del total</th></tr></thead>
         <tbody>
           ${filas}
-          <tr class="total"><td class="lbl">Total</td><td class="num">${fmtUSD(totalPrev)}</td><td class="num">${fmtUSD(totalCurr)}</td><td class="num">${signoTotal}${fmtUSD(diffTotal)}</td><td class="num">${signoTotal}${pctTotal.toFixed(1)}%</td></tr>
+          <tr class="total"><td class="lbl">Total</td><td class="num">${fmtUSD(totalMes)}</td><td class="num">100.0%</td></tr>
         </tbody>
       </table>
-      <div class="evol-compare-legend">Verde = mejora (sube el Capital Sano A+B, o baja C/D/AD). Rojo = empeora. AN queda sin color porque es inventario nuevo — ni bueno ni malo por sí solo.</div>`;
+      <div class="evol-compare-legend">Haz clic en otra barra arriba para ver el desglose de ese mes y comparar.</div>`;
   }
 
   function renderEvolucion(){
@@ -1398,10 +1385,10 @@
       <span><span class="lbl">SKU </span><span class="val">${fmtN(selStats.skus)}</span></span>
       <span><span class="lbl">Líneas </span><span class="val">${fmtN(selStats.lineas)}</span></span>`;
     document.getElementById('evol-note').textContent = spec
-      ? 'Comparativa filtrada según los filtros activos arriba. Haz clic en una barra para ver el detalle de ese mes.'
-      : 'Haz clic en una barra para ver el detalle de ese mes. Este gráfico se completa automáticamente cada vez que se corre una actualización mensual.';
+      ? 'Comparativa filtrada según los filtros activos arriba. Haz clic en una barra para ver el detalle y desglose de ese mes.'
+      : 'Haz clic en una barra para ver el detalle y desglose por Clasificación de ese mes. Este gráfico se completa automáticamente cada vez que se corre una actualización mensual.';
 
-    renderEvolCompare(keys, spec);
+    renderEvolClaseMes(evolSelectedKey, spec);
   }
 
   function renderMatrix(){
