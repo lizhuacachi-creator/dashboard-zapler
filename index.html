@@ -704,7 +704,7 @@
       </div>
 
       <div class="panel" style="margin-bottom:16px;">
-        <h2>Evolución mensual del avance <span class="note">% de la meta de venta (a precio de campaña) alcanzado, acumulado mes a mes desde el congelamiento · clic en un mes para ver el detalle</span></h2>
+        <h2>Evolución mensual del avance <span class="note">% de la meta de venta (a precio de campaña) alcanzado, acumulado mes a mes desde el congelamiento, con el crecimiento de cada mes vs. el anterior · clic en un mes para ver el detalle</span></h2>
         <div class="body">
           <div id="primera-evolucion"></div>
           <div id="primera-evolucion-detalle" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--grid);" hidden>
@@ -2713,15 +2713,30 @@
     }
     // Si el mes seleccionado ya no existe en los datos, limpiar la seleccion.
     if (primeraEvolMesSel && !meses.includes(primeraEvolMesSel)) primeraEvolMesSel = null;
-    el.innerHTML = meses.map(k=>{
+    // Crecimiento mes a mes (pedido de Eli, 07-oct-2026: "cuanto crecio en % y dolares
+    // para revisar mes a mes") -- cada mes de PRIMERA_EVOLUCION.porMes ya trae el
+    // ACUMULADO desde el congelamiento (no un incremento), asi que el crecimiento de
+    // cada mes se calcula aqui mismo, en el navegador, restando el acumulado del mes
+    // anterior -- sin tocar build_primera_evolucion.py ni el JSON.
+    el.innerHTML = meses.map((k,i)=>{
       const m = PRIMERA_EVOLUCION.porMes[k];
       const anio = k.slice(2,4);
       const w = Math.min(m.pctAvanceValor,100).toFixed(2);
       const sel = k===primeraEvolMesSel;
+      const prev = i>0 ? PRIMERA_EVOLUCION.porMes[meses[i-1]] : null;
+      let crecimiento;
+      if (prev){
+        const deltaPct = +(m.pctAvanceValor - prev.pctAvanceValor).toFixed(1);
+        const deltaUSD = m.valorizadoVendidoTotal - prev.valorizadoVendidoTotal;
+        const color = deltaUSD>0 ? 'var(--green)' : (deltaUSD<0 ? 'var(--red)' : 'var(--text-3)');
+        crecimiento = `<span style="color:${color};">Creció ${deltaPct>=0?'+':''}${deltaPct}pp · ${deltaUSD>=0?'+':''}${fmtUSD(deltaUSD)} vs. ${prev.label} ${anio}</span>`;
+      } else {
+        crecimiento = `Primer mes del congelamiento`;
+      }
       return `<div class="barrow" data-mes="${k}" style="cursor:pointer; ${sel?'background:var(--amber-wash); border-radius:6px;':''}">
         <div class="name">${m.label} ${anio}</div>
         <div class="bartrack"><div class="seg" style="width:${w}%;background:var(--amber)"></div></div>
-        <div class="amt num">${m.pctAvanceValor}%<small>${fmtUSD(m.valorizadoVendidoTotal)} · ${m.pctAvanceUnidades}% unidades · ${fmtN(m.nVendidoTotal)} líneas al 100%</small></div>
+        <div class="amt num">${m.pctAvanceValor}%<small>${fmtUSD(m.valorizadoVendidoTotal)} · ${m.pctAvanceUnidades}% unidades · ${fmtN(m.nVendidoTotal)} líneas al 100%</small><small>${crecimiento}</small></div>
       </div>`;
     }).join('');
     el.querySelectorAll('.barrow[data-mes]').forEach(row=>{
