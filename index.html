@@ -642,12 +642,13 @@
             <div class="count-note" id="campana-table-count" style="padding:0;"></div>
           </div>
           <div class="tablewrap">
-            <table class="action" id="campana-table" style="min-width:1680px;">
+            <table class="action" id="campana-table" style="min-width:1820px;">
               <thead><tr>
                 <th data-sort="sap">SAP<span class="arw">↕</span></th>
                 <th data-sort="numparte">N° de Parte<span class="arw">↕</span></th>
                 <th data-sort="descripcion">Descripción<span class="arw">↕</span></th>
                 <th data-sort="marca">Marca<span class="arw">↕</span></th>
+                <th data-sort="modelo">Modelo<span class="arw">↕</span></th>
                 <th data-sort="almacen">Almacén<span class="arw">↕</span></th>
                 <th data-sort="antiguedadCongelada" style="text-align:right;">Antigüedad<span class="arw">↕</span></th>
                 <th data-sort="stockCongelado" style="text-align:right;">Stock<span class="arw">↕</span></th>
@@ -710,9 +711,9 @@
           <div id="primera-evolucion-detalle" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--grid);" hidden>
             <div class="evol-compare-title" id="primera-evolucion-detalle-titulo"></div>
             <div class="tablewrap" style="max-height:420px;">
-              <table class="action" id="primera-evolucion-detalle-table" style="min-width:900px;">
+              <table class="action" id="primera-evolucion-detalle-table" style="min-width:1050px;">
                 <thead><tr>
-                  <th>SAP</th><th>N° de Parte</th><th>Descripción</th><th>Marca</th><th>Almacén</th>
+                  <th>SAP</th><th>N° de Parte</th><th>Descripción</th><th>Marca</th><th>Modelo</th><th>Almacén</th>
                   <th style="text-align:right;">Vendido (und.)</th>
                   <th style="text-align:right;">Vendido real (USD)</th>
                   <th style="text-align:right;">Precio Venta Real</th>
@@ -743,12 +744,13 @@
             <div class="count-note" id="primera-table-count" style="padding:0;"></div>
           </div>
           <div class="tablewrap">
-            <table class="action" id="primera-table" style="min-width:1780px;">
+            <table class="action" id="primera-table" style="min-width:1920px;">
               <thead><tr>
                 <th data-sort="sap">SAP<span class="arw">↕</span></th>
                 <th data-sort="numparte">N° de Parte<span class="arw">↕</span></th>
                 <th data-sort="descripcion">Descripción<span class="arw">↕</span></th>
                 <th data-sort="marca">Marca<span class="arw">↕</span></th>
+                <th data-sort="modelo">Modelo<span class="arw">↕</span></th>
                 <th data-sort="almacen">Almacén<span class="arw">↕</span></th>
                 <th data-sort="antiguedadCongelada" style="text-align:right;">Antigüedad<span class="arw">↕</span></th>
                 <th data-sort="stockCongelado" style="text-align:right;">Stock<span class="arw">↕</span></th>
@@ -2444,7 +2446,7 @@
   } catch(e){ CAMPANA = null; }
 
   const campanaState = { search:'', estado:'all', sortCol:'valorizadoCongelado', sortDir:'desc' };
-  const CAMPANA_SORT_TEXT = new Set(['sap','numparte','descripcion','marca','almacen','estado']);
+  const CAMPANA_SORT_TEXT = new Set(['sap','numparte','descripcion','marca','modelo','almacen','estado']);
   let CAMPANA_LAST_ROWS = [];
 
   function estadoBadge(estado){
@@ -2532,6 +2534,7 @@
       rows = rows.filter(r => String(r.sap).toLowerCase().includes(s) ||
                                String(r.numparte).toLowerCase().includes(s) ||
                                String(r.descripcion).toLowerCase().includes(s) ||
+                               String(r.modelo||'').toLowerCase().includes(s) ||
                                String(r.vendedores||'').toLowerCase().includes(s));
     }
     const col = campanaState.sortCol, isText = CAMPANA_SORT_TEXT.has(col), dir = campanaState.sortDir==='asc'?1:-1;
@@ -2550,6 +2553,7 @@
         <td>${r.numparte}</td>
         <td style="max-width:340px;"><span class="tcell-trunc" title="${String(r.descripcion).replace(/"/g,'&quot;')}">${r.descripcion}</span></td>
         <td>${r.marca}</td>
+        <td style="max-width:220px;">${r.modelo ? `<span class="tcell-trunc" title="${String(r.modelo).replace(/"/g,'&quot;')}">${r.modelo}</span>` : '<span style="color:var(--text-3);">—</span>'}</td>
         <td style="max-width:260px;"><span class="tcell-trunc" title="${String(r.almacen).replace(/"/g,'&quot;')}">${r.almacen}</span></td>
         <td class="num" style="text-align:right;">${(r.antiguedadCongelada||0).toFixed(1)}a</td>
         <td class="num" style="text-align:right;">${fmtN(r.stockCongelado)}</td>
@@ -2651,7 +2655,7 @@
   } catch(e){ PRIMERA_EVOLUCION = {meses: [], porMes: {}}; }
 
   const primeraState = { search:'', estado:'all', sortCol:'valorizadoPrecioCampana', sortDir:'desc' };
-  const PRIMERA_SORT_TEXT = new Set(['sap','numparte','descripcion','marca','almacen','estado']);
+  const PRIMERA_SORT_TEXT = new Set(['sap','numparte','descripcion','marca','modelo','almacen','estado']);
   let PRIMERA_LAST_ROWS = [];
   // Mes seleccionado en el panel de evolucion (pedido de Eli, 06-oct-2026: "si le doy
   // click en el mes, se debe ver lo que se vendio, todo el detalle") -- null = nada
@@ -2763,7 +2767,7 @@
       `Detalle de lo vendido al cierre de ${m.label} ${anio} (acumulado desde el congelamiento) — ${fmtN(m.detalle.length)} líneas · ${fmtUSD(m.valorizadoVendidoTotal)}`;
     const tbody = document.getElementById('primera-evolucion-detalle-tbody');
     if (!m.detalle.length){
-      tbody.innerHTML = '<tr><td colspan="12" style="text-align:center; color:var(--text-2);">Todavía no había ventas registradas a este corte.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="13" style="text-align:center; color:var(--text-2);">Todavía no había ventas registradas a este corte.</td></tr>';
       return;
     }
     tbody.innerHTML = m.detalle.map(r=>`
@@ -2772,6 +2776,7 @@
         <td>${r.numparte}</td>
         <td style="max-width:300px;"><span class="tcell-trunc" title="${String(r.descripcion).replace(/"/g,'&quot;')}">${r.descripcion}</span></td>
         <td>${r.marca}</td>
+        <td style="max-width:200px;">${r.modelo ? `<span class="tcell-trunc" title="${String(r.modelo).replace(/"/g,'&quot;')}">${r.modelo}</span>` : '<span style="color:var(--text-3);">—</span>'}</td>
         <td>${r.almacen}</td>
         <td class="num" style="text-align:right;">${fmtN(r.cantidadVendida)}</td>
         <td class="num" style="text-align:right;">${fmtUSD(r.valorizadoVendido)}</td>
@@ -2814,6 +2819,7 @@
       rows = rows.filter(r => String(r.sap).toLowerCase().includes(s) ||
                                String(r.numparte).toLowerCase().includes(s) ||
                                String(r.descripcion).toLowerCase().includes(s) ||
+                               String(r.modelo||'').toLowerCase().includes(s) ||
                                String(r.vendedores||'').toLowerCase().includes(s));
     }
     const col = primeraState.sortCol, isText = PRIMERA_SORT_TEXT.has(col), dir = primeraState.sortDir==='asc'?1:-1;
@@ -2832,6 +2838,7 @@
         <td>${r.numparte}</td>
         <td style="max-width:340px;"><span class="tcell-trunc" title="${String(r.descripcion).replace(/"/g,'&quot;')}">${r.descripcion}</span></td>
         <td>${r.marca}</td>
+        <td style="max-width:220px;">${r.modelo ? `<span class="tcell-trunc" title="${String(r.modelo).replace(/"/g,'&quot;')}">${r.modelo}</span>` : '<span style="color:var(--text-3);">—</span>'}</td>
         <td>${r.almacen}</td>
         <td class="num" style="text-align:right;">${(r.antiguedadCongelada||0).toFixed(0)}a</td>
         <td class="num" style="text-align:right;">${fmtN(r.stockCongelado)}</td>
