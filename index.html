@@ -2002,6 +2002,7 @@
   }
 
   function renderDistPortafolio(){
+    const {map: portColor} = portColorMap();
     const byPort = new Map();
     for (const r of FILTERED){
       const p = r[COLS.portafolio], v = r[COLS.valUSD];
@@ -2012,9 +2013,10 @@
     const max = Math.max(1, ...arr.map(x=>x.v));
     document.getElementById('dist-portafolio').innerHTML = arr.map(x=>{
       const h = (x.v/max*100).toFixed(2);
+      const color = portColor[x.name] || 'var(--gray-400)';
       return `<div class="distvert-col">
         <div class="mlbl num">${fmtUSD(x.v)}</div>
-        <div class="distvert-track"><div class="bar" style="height:${h}%"></div></div>
+        <div class="distvert-track"><div class="bar" style="height:${h}%;background:${color}"></div></div>
         <div class="mlbl" lang="es">${x.name}<span class="n">${fmtN(x.n)} líneas</span></div>
       </div>`;
     }).join('');
