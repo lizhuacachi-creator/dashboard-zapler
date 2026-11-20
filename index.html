@@ -27,6 +27,13 @@
     --c-d-bg:#6C7784; --c-d-fg:#FFFFFF;
     --c-ad-bg:#C0403A; --c-ad-fg:#FFFFFF;
     --c-an-bg:#FFFFFF; --c-an-fg:#5A6472; --c-an-bd:#9AA3AF;
+    /* paleta categorica para Portafolio (ver dataviz skill / validate_palette.js) -- 6
+       colores fijos (sin magenta -- pedido de Eli 19-nov-2026, "no rosado, colores mas
+       serios" -- y sin verde: sin el magenta como amortiguador, verde+amarillo vecinos
+       fallan la separacion CVD en modo oscuro; validado con --pairs adjacent en ambos
+       modos). El 7mo portafolio (el de menor valorizado) cae en "Otros", gris neutro. */
+    --port-c1:#dda758; --port-c2:#477abd; --port-c3:#d67957; --port-c4:#54a882;
+    --port-c5:#dd3528; --port-c6:#387d33;
     --shadow: 0 1px 2px rgba(10,10,10,.05);
     --panel-shadow: 0 8px 24px rgba(10,10,10,.14);
   }
@@ -47,6 +54,8 @@
       --c-d-bg:#667385; --c-d-fg:#FFFFFF;
       --c-ad-bg:#DA564C; --c-ad-fg:#FFFFFF;
       --c-an-bg:#121214; --c-an-fg:#9AA3AF; --c-an-bd:#4A535E;
+      --port-c1:#bf893c; --port-c2:#4d88d3; --port-c3:#cb6641; --port-c4:#429a75;
+      --port-c5:#f15d51; --port-c6:#3e9e39;
       --shadow: 0 1px 2px rgba(0,0,0,.5);
       --panel-shadow: 0 8px 24px rgba(0,0,0,.55);
     }
@@ -67,6 +76,8 @@
     --c-d-bg:#667385; --c-d-fg:#FFFFFF;
     --c-ad-bg:#DA564C; --c-ad-fg:#FFFFFF;
     --c-an-bg:#121214; --c-an-fg:#9AA3AF; --c-an-bd:#4A535E;
+    --port-c1:#bf893c; --port-c2:#4d88d3; --port-c3:#cb6641; --port-c4:#429a75;
+    --port-c5:#f15d51; --port-c6:#3e9e39;
     --shadow: 0 1px 2px rgba(0,0,0,.5);
     --panel-shadow: 0 8px 24px rgba(0,0,0,.55);
   }
@@ -274,6 +285,46 @@
   .legend .sw{display:inline-flex; align-items:center; gap:5px; margin-right:2px;}
   .legend .chip{width:10px; height:10px; border-radius:2px; display:inline-block; border:1px solid var(--border);}
 
+  /* ---------- barras agrupadas por tarjeta (Antigüedad x Portafolio) ---------- */
+  .antport-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px;}
+  .antport-card{border:1px solid var(--border); border-radius:6px; padding:8px 10px 5px; background:var(--surface-2);}
+  .antport-card .hd{font-size:11px; font-weight:700; color:var(--text-1); margin-bottom:4px; display:flex; justify-content:space-between; gap:8px;}
+  .antport-card .hd .n{font-weight:400; color:var(--text-3); font-size:10px;}
+  .barrow.mini{grid-template-columns:70px 1fr 56px; gap:5px; padding:2px 0;}
+  .barrow.mini .name{font-size:10px;}
+  .barrow.mini .bartrack{height:11px;}
+  .barrow.mini .amt{font-size:9.5px;}
+
+  /* ---------- barras horizontales apiladas por Antigüedad, coloreadas por Portafolio ---------- */
+  /* Eli (19-nov-2026): tras ver las columnas verticales, "que feo se ve no me gusta, mejor
+     que sea con las columnas horizontales" -- vuelve la orientación horizontal (como en las
+     versiones 77-79), apilado por color dentro de cada fila (eso sigue siendo lo que pidió
+     el gerente), con el mismo acabado profesional de la V81: 2px de gap color de superficie
+     entre segmentos, esquinas rectas salvo 4px redondeado solo en la punta final de la barra,
+     y la barra angosta (no ocupa todo el alto disponible de la fila). Los 6 colores no
+     cambian -- ya validados contra daltonismo (ver patch v4). */
+  .antport-rows{display:flex; flex-direction:column; gap:10px; padding:8px 4px;}
+  .antport-row{display:grid; grid-template-columns:56px 1fr 92px; align-items:center; gap:10px;}
+  .antport-row .lbl{font-size:11px; color:var(--text-2); font-weight:700; text-transform:uppercase;}
+  .antport-row .trackwrap{width:100%;}
+  .antport-row .track{height:22px; display:flex; flex-direction:row; gap:2px; min-width:2px;}
+  .antport-row .track .seg{height:100%; min-width:2px; transition:filter .08s; border:none; border-radius:0;}
+  .antport-row .track .seg:hover{filter:brightness(1.12); cursor:default;}
+  .antport-row .amt{font-size:12px; font-weight:800; color:var(--text-1); text-align:right; white-space:nowrap;}
+
+  /* Tooltip propio al pasar el mouse por un segmento -- "que cuando pasen por cada uno de los
+     portafolios aparezca el importe" (Eli, 19-nov-2026). Mismo estilo visual que el tooltip
+     que ya usa esta dashboard en otro gráfico (#cr-tooltip), pero con el importe como dato
+     principal (linea fuerte) y el nombre/lineas como dato secundario -- jerarquía "values
+     lead, labels follow" de la skill de dataviz. */
+  .antport-tooltip{position:absolute; background:var(--ink-900); color:#fff; padding:7px 10px; border-radius:5px; font-size:11px; pointer-events:none; opacity:0; transition:opacity .1s; white-space:nowrap; z-index:60;}
+  .antport-tooltip .v{display:block; font-size:13px; font-weight:800;}
+  .antport-tooltip .k{display:block; font-size:10.5px; color:#C6C6C9; font-weight:600; margin-top:1px;}
+
+  /* Tabla desplegable: "más alta y menos ancha" (Eli, 19-nov-2026) -- ancho máximo fijo (no
+     100% del panel) y números alineados a la derecha como cualquier tabla de cifras. */
+
+
   /* ---------- leyenda de prioridades ---------- */
   .priolegend{display:flex; flex-direction:column; gap:9px; margin-bottom:10px;}
   .prio-item{font-size:11.5px; color:var(--text-2); line-height:1.5; padding-left:18px; position:relative;}
@@ -290,6 +341,18 @@
   .donut-legend .pp{color:var(--text-3); font-size:10.5px; width:38px; text-align:right;}
 
   /* ---------- evolucion ---------- */
+  /* ---------- columnas verticales para Distribución por Antigüedad / por Portafolio ---------- */
+  /* Eli (20-nov-2026): "y estas que sean en vertical, para que no se vea todo igual" -- una
+     sola serie por columna (sin apilado de color), igual criterio de esquinas rectas que el
+     gráfico de Antigüedad x Portafolio de al lado ("el final que sea recto, no redondeado"). */
+  .distvert-row{display:flex; align-items:flex-end; gap:14px; height:170px; padding:8px 4px 0; overflow-x:auto;}
+  .distvert-col{flex:1 1 0; min-width:52px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px;}
+  .distvert-track{width:46%; min-width:26px; height:100%; display:flex; align-items:flex-end; background:var(--surface-2);}
+  .distvert-track .bar{width:100%; background:var(--ink-900); min-height:2px; transition:background .12s;}
+  .distvert-col .mlbl{font-size:10px; color:var(--text-3); font-weight:700; text-transform:uppercase; text-align:center; line-height:1.3; hyphens:auto; overflow-wrap:break-word;}
+  .distvert-col .mlbl .n{display:block; font-weight:400; font-size:9px; text-transform:none;}
+  .distvert-col .mlbl.num{color:var(--text-1); font-weight:800; font-size:11.5px; text-transform:none;}
+
   .evol-row{display:flex; align-items:flex-end; gap:10px; height:120px; padding:6px 4px 0;}
   .evol-row.many{overflow-x:auto; overflow-y:hidden; justify-content:flex-start; gap:8px; padding-bottom:8px;}
   .evol-bar{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px;}
@@ -487,22 +550,36 @@
             <div class="body"><div id="donut-clase"></div></div>
           </div>
           <div class="panel">
-            <h2>Distribución por Antigüedad <span class="note">Valorizado USD</span></h2>
-            <div class="body"><div id="dist-antiguedad"></div></div>
-          </div>
-        </div>
-
-        <div class="grid2">
-          <div class="panel">
             <h2>Distribución por Almacén <span class="note" id="alm-note"></span></h2>
             <div class="body">
               <div id="alm-bars"></div>
               <div class="legend" id="class-legend"></div>
             </div>
           </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px;">
+          <h2>Distribución por Antigüedad y Portafolio <span class="note">Valorizado USD · un color fijo por portafolio</span></h2>
+          <div class="body">
+            <div id="chart-antport" class="antport-rows"></div>
+            <div id="antport-tooltip" class="antport-tooltip"><span class="v"></span><span class="k"></span></div>
+            <div class="legend" id="antport-legend"></div>
+          </div>
+        </div>
+
+        <details class="panel" style="margin-bottom:16px;">
+          <summary>Antigüedad × Portafolio — tabla con las cifras exactas <span class="note">clic para expandir</span></summary>
+          <div class="body"><div class="tablewrap"><table class="matrix" id="matrix-antport-table"></table></div></div>
+        </details>
+
+        <div class="grid2">
+          <div class="panel">
+            <h2>Distribución por Antigüedad <span class="note">Valorizado USD</span></h2>
+            <div class="body"><div id="dist-antiguedad" class="distvert-row"></div></div>
+          </div>
           <div class="panel">
             <h2>Distribución por Portafolio <span class="note">Valorizado USD</span></h2>
-            <div class="body"><div id="dist-portafolio"></div></div>
+            <div class="body"><div id="dist-portafolio" class="distvert-row"></div></div>
           </div>
         </div>
 
@@ -1337,6 +1414,7 @@
     renderDistAntiguedad();
     renderAlmacenes();
     renderDistPortafolio();
+    renderMatrixAntPort();
     renderDistMarca();
     renderDistFamilia();
     renderEvolucion();
@@ -1914,11 +1992,11 @@
     const rows = sinDato.n ? buckets.concat([{label:'Sin fecha', v:sinDato.v, n:sinDato.n}]) : buckets;
     const max = Math.max(1, ...rows.map(x=>x.v));
     document.getElementById('dist-antiguedad').innerHTML = rows.map(x=>{
-      const w = (x.v/max*100).toFixed(2);
-      return `<div class="barrow narrow">
-        <div class="name"><b>${x.label}</b></div>
-        <div class="bartrack"><div class="seg" style="width:${w}%;background:var(--ink-900)"></div></div>
-        <div class="amt num">${fmtUSD(x.v)}<small>${fmtN(x.n)} líneas</small></div>
+      const h = (x.v/max*100).toFixed(2);
+      return `<div class="distvert-col">
+        <div class="mlbl num">${fmtUSD(x.v)}</div>
+        <div class="distvert-track"><div class="bar" style="height:${h}%"></div></div>
+        <div class="mlbl" lang="es">${x.label}<span class="n">${fmtN(x.n)} líneas</span></div>
       </div>`;
     }).join('');
   }
@@ -1933,13 +2011,165 @@
     let arr = [...byPort.entries()].map(([idx,o])=>({name:PORT[idx], ...o})).sort((a,b)=>b.v-a.v);
     const max = Math.max(1, ...arr.map(x=>x.v));
     document.getElementById('dist-portafolio').innerHTML = arr.map(x=>{
-      const w = (x.v/max*100).toFixed(2);
-      return `<div class="barrow">
-        <div class="name">${x.name}</div>
-        <div class="bartrack"><div class="seg" style="width:${w}%;background:var(--ink-900)"></div></div>
-        <div class="amt num">${fmtUSD(x.v)}<small>${fmtN(x.n)} líneas</small></div>
+      const h = (x.v/max*100).toFixed(2);
+      return `<div class="distvert-col">
+        <div class="mlbl num">${fmtUSD(x.v)}</div>
+        <div class="distvert-track"><div class="bar" style="height:${h}%"></div></div>
+        <div class="mlbl" lang="es">${x.name}<span class="n">${fmtN(x.n)} líneas</span></div>
       </div>`;
     }).join('');
+  }
+
+  // Color y orden de Portafolio: FIJOS, elegidos directamente por Eli (19-nov-2026) --
+  // Grúas amarillo, Camiones azul, Construcción naranja, Manipulador celeste, Montacargas
+  // rojo, Agrícola verde. "Celeste" no existe como color propio en la paleta validada de la
+  // skill de dataviz (solo trae azul y un aqua/turquesa) -- se usa aqua, lo más parecido
+  // disponible. El orden es "de mayor a menor valorizado" (pedido anterior de Eli) CON una
+  // excepción: Montacargas y Manipulador están intercambiados porque, en el orden estricto
+  // por valor, Construcción (naranja) queda al lado de Montacargas (rojo) -- ese par
+  // puntual no pasa la separación de daltonismo (validado con validate_palette.js, no a
+  // ojo); con este intercambio sí pasan las 5 verificaciones en ambos modos. "Otros" (gris)
+  // agrupa cualquier portafolio fuera de esta lista (hoy: Camionetas), siempre al final.
+  const PORT_FIJO = [
+    {nombre:'GRÚAS',        slot:1}, // amarillo
+    {nombre:'CAMIONES',     slot:2}, // azul
+    {nombre:'CONSTRUCCIÓN', slot:3}, // naranja
+    {nombre:'MANIPULADOR',  slot:4}, // celeste (aqua, el más parecido disponible)
+    {nombre:'MONTACARGAS',  slot:5}, // rojo
+    {nombre:'AGRICOLA',     slot:6}, // verde
+  ];
+  function portColorMap(){
+    const map = {}, order = [];
+    PORT_FIJO.forEach(({nombre, slot})=>{ map[nombre] = `var(--port-c${slot})`; order.push(nombre); });
+    const conColor = new Set(order);
+    const todos = new Set();
+    for (const r of DATA.rows){
+      const n = PORT[r[COLS.portafolio]];
+      if (n!=null && n!=='') todos.add(n);
+    }
+    const otrosNombres = [...todos].filter(n=>!conColor.has(n));
+    return {order, map, otrosNombres};
+  }
+
+  function renderMatrixAntPort(){
+    const {order: portOrder, map: portColor, otrosNombres} = portColorMap();
+    const filasOrden = [...portOrder, 'Otros']; // orden fijo -- igual en TODAS las tarjetas,
+    // nunca se omite una fila en 0 (ver nota más abajo, es a propósito).
+
+    const m = {};
+    ANT_BUCKETS.forEach((_,bi)=>{ m[bi]={}; filasOrden.forEach(nombre=>m[bi][nombre]={v:0,n:0}); });
+    let sinDato = {v:0,n:0};
+    for (const r of FILTERED){
+      const p = r[COLS.portafolio], ant = r[COLS.antA], v = r[COLS.valUSD];
+      if (ant==null){ sinDato.v+=v; sinDato.n++; continue; }
+      const bi = ANT_BUCKETS.findIndex(b=>ant>=b[0] && ant<b[1]);
+      if (bi<0) continue;
+      const nombre = PORT[p];
+      const key = (nombre!=null && portColor[nombre]) ? nombre : 'Otros';
+      if (!m[bi][key]) continue;
+      m[bi][key].v += v; m[bi][key].n++;
+    }
+    const colTotal = {}; filasOrden.forEach(nombre=>colTotal[nombre]={v:0,n:0});
+    ANT_BUCKETS.forEach((_,bi)=> filasOrden.forEach(nombre=>{ colTotal[nombre].v += m[bi][nombre].v; colTotal[nombre].n += m[bi][nombre].n; }));
+    let grandV = 0, grandN = 0;
+    filasOrden.forEach(nombre=>{ grandV += colTotal[nombre].v; grandN += colTotal[nombre].n; });
+    grandV += sinDato.v; grandN += sinDato.n;
+
+    // --- Gráfico: barras HORIZONTALES apiladas, una por rango de Antigüedad, coloreadas por
+    // Portafolio (pedido del gerente vía Eli, 19-nov-2026; orientación horizontal pedida por
+    // Eli el mismo día tras ver la versión en columnas verticales -- "que feo se ve no me
+    // gusta, mejor que sea con las columnas horizontales"). El largo de cada barra es relativo
+    // al total máximo entre rangos de antigüedad; dentro de la barra, cada segmento ocupa la
+    // proporción que le corresponde dentro del total de ESA fila. Limitación conocida de las
+    // barras apiladas (ya conversada con Eli): solo el primer segmento comparte la línea de
+    // base, los demás son más difíciles de comparar a ojo entre sí -- se mitiga con el
+    // tooltip de cifra exacta en cada segmento y con la tabla desplegable debajo del gráfico.
+    const totales = ANT_BUCKETS.map((b,bi)=>{
+      let v=0, n=0; filasOrden.forEach(nombre=>{ v += m[bi][nombre].v; n += m[bi][nombre].n; });
+      return {v, n};
+    });
+    const maxTotal = Math.max(1, ...totales.map(t=>t.v));
+
+    function rowHtml(label, total, bi){
+      const w = total.v ? Math.max(4, (total.v/maxTotal*100)) : 0;
+      let segsHtml;
+      if (bi==null){
+        segsHtml = `<div class="seg" style="flex:1 0 auto;background:var(--gray-400)" data-nombre="Sin fecha" data-val="${total.v}" data-n="${total.n}"></div>`;
+      } else {
+        // de izquierda a derecha: orden natural de filasOrden -- el primero de la lista (hoy:
+        // Grúas) queda pegado a la línea base (el cero, a la izquierda).
+        segsHtml = filasOrden.map(nombre=>{
+          const cell = m[bi][nombre]; if (!cell.v) return '';
+          const pct = (cell.v/total.v*100).toFixed(2);
+          const color = nombre==='Otros' ? 'var(--gray-400)' : portColor[nombre];
+          return `<div class="seg" style="flex:0 0 ${pct}%;background:${color}" data-nombre="${nombre}" data-val="${cell.v}" data-n="${cell.n}"></div>`;
+        }).join('');
+      }
+      return `<div class="antport-row">
+        <div class="lbl">${label}</div>
+        <div class="trackwrap"><div class="track" style="width:${w}%">${segsHtml}</div></div>
+        <div class="amt">${total.v?fmtUSD(total.v):'—'}</div>
+      </div>`;
+    }
+
+    // Tooltip propio al pasar el mouse por cada segmento -- reemplaza el "title" nativo del
+    // navegador por un tooltip con el importe como dato principal (pedido de Eli,
+    // 19-nov-2026). El nombre del portafolio nunca se inserta con innerHTML (viene de la
+    // data importada): se usa textContent.
+    function antportWireTooltip(container){
+      const tip = document.getElementById('antport-tooltip');
+      if (!tip) return;
+      const vEl = tip.querySelector('.v'), kEl = tip.querySelector('.k');
+      container.querySelectorAll('.seg[data-nombre]').forEach(seg=>{
+        seg.addEventListener('mousemove', e=>{
+          const nombre = seg.dataset.nombre;
+          const val = parseFloat(seg.dataset.val);
+          const n = parseInt(seg.dataset.n, 10);
+          vEl.textContent = fmtUSD(val);
+          kEl.textContent = n ? (nombre + ' · ' + fmtN(n) + ' líneas') : nombre;
+          tip.style.left = (e.pageX+12)+'px'; tip.style.top = (e.pageY-40)+'px'; tip.style.opacity = 1;
+        });
+        seg.addEventListener('mouseleave', ()=>{ tip.style.opacity = 0; });
+      });
+    }
+
+    let cardsHtml = ANT_BUCKETS.map((b,bi)=>rowHtml(b[2], totales[bi], bi)).join('');
+    if (sinDato.n) cardsHtml += rowHtml('Sin fecha', sinDato, null);
+    const antportChartEl = document.getElementById('chart-antport');
+    antportChartEl.innerHTML = cardsHtml;
+    antportWireTooltip(antportChartEl);
+
+    const otrosTexto = otrosNombres.length ? ` (${otrosNombres.join(', ')})` : '';
+    document.getElementById('antport-legend').innerHTML =
+      portOrder.map(nombre=>`<span class="sw"><span class="chip" style="background:${portColor[nombre]}"></span>${nombre}</span>`).join('') +
+      `<span class="sw"><span class="chip" style="background:var(--gray-400)"></span>Otros${otrosTexto}</span>`;
+
+    // --- Tabla desplegable con las cifras exactas, cruce ANCHO (Antigüedad en filas,
+    // Portafolio en columnas) -- Eli pidió volver a este formato (20-nov-2026): "ese cuadro
+    // que sera horizontal, el primero que me enviaste año y portafolio cruzado. que siga asi
+    // con el click para expandir". Mismo agrupamiento (6 portafolios + Otros) que el gráfico,
+    // para que ambas vistas muestren siempre los mismos números.
+    let html = '<thead><tr><th>Antigüedad</th>' + filasOrden.map(nombre=>`<th>${nombre}</th>`).join('') + '<th>Total</th></tr></thead><tbody>';
+    ANT_BUCKETS.forEach((b,bi)=>{
+      let rowV=0, rowN=0;
+      const cells = filasOrden.map(nombre=>{
+        const cell = m[bi][nombre]; rowV+=cell.v; rowN+=cell.n;
+        const cls = (cell.v===0?'zero':'');
+        return `<td class="${cls}">${cell.v?fmtUSD(cell.v):'—'}${cell.n?('<span class="n">'+fmtN(cell.n)+' líneas</span>'):''}</td>`;
+      }).join('');
+      html += `<tr><th>${b[2]}</th>` + cells +
+        `<td class="rowtotal">${rowV?fmtUSD(rowV):'—'}${rowN?('<span class="n">'+fmtN(rowN)+' líneas</span>'):''}</td></tr>`;
+    });
+    if (sinDato.n){
+      html += `<tr><th>Sin fecha</th><td colspan="${filasOrden.length}">${fmtUSD(sinDato.v)} <span class="n">(${fmtN(sinDato.n)} líneas sin última fecha de compra)</span></td>` +
+        `<td class="rowtotal">${fmtUSD(sinDato.v)}<span class="n">${fmtN(sinDato.n)} líneas</span></td></tr>`;
+    }
+    html += `<tr class="totalrow"><th>Total</th>` + filasOrden.map(nombre=>
+      `<td>${colTotal[nombre].v?fmtUSD(colTotal[nombre].v):'—'}${colTotal[nombre].n?('<span class="n">'+fmtN(colTotal[nombre].n)+' líneas</span>'):''}</td>`).join('') +
+      `<td>${fmtUSD(grandV)}<span class="n">${fmtN(grandN)} líneas</span></td></tr>`;
+    html += '</tbody>';
+    const tbl = document.getElementById('matrix-antport-table');
+    if (tbl) tbl.innerHTML = html;
   }
 
   function renderDistMarca(){
